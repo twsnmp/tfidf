@@ -2,7 +2,7 @@
 
 ## Introduction
 
-+ tokenizer support, contains english and jieba Chinese Tokenizer.
++ tokenizer support, contains english and Japanease Tokenizer.
 + TFIDF, calculate tfidf value of giving document.
 + Cosine, calculate Cosine value of giving documents pair.
 + glide is used to manage go packages.
@@ -11,7 +11,6 @@
 
 ```
 go get github.com/wilcosheh/tfidf
-glide i
 ```
 
 
@@ -21,9 +20,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/wilcosheh/tfidf"
-	"github.com/wilcosheh/tfidf/seg"
-	"github.com/wilcosheh/tfidf/similarity"
+	"github.com/twsnmp/tfidf"
+	"github.com/twsnmp/tfidf/seg"
+	"github.com/twsnmp/tfidf/similarity"
 )
 
 func main() {
@@ -42,23 +41,29 @@ func main() {
 	sim := similarity.Cosine(w1, w2)
 	fmt.Printf("cosine between %s and %s is %f .\n", t1, t2, sim)
 
-	tokenizer := seg.NewJieba()
+	tokenizer := &seg.JaJaTokenizer{}
 	defer tokenizer.Free()
 
 	f = tfidf.NewTokenizer(tokenizer)
 
-	f.AddDocs("重庆大学", "上海市复旦大学", "上海交通大学", "重庆理工大学")
+	f.AddDocs("東京大学", "早稲田大学", "東京工業大学", "北見工業大学", "慶応大学")
 
-	t1 = "重庆市西南大学"
+	t1 = "東京工業大学"
 	w1 = f.Cal(t1)
 	fmt.Printf("weight of %s is %+v.\n", t1, w1)
 
-	t2 = "重庆市重庆大学"
+	t2 = "北見工業大学"
 	w2 = f.Cal(t2)
 	fmt.Printf("weight of %s is %+v.\n", t2, w2)
 
-	sim = similarity.Cosine(w1, w2)
-	fmt.Printf("cosine between %s and %s is %f .\n", t1, t2, sim)
+	t3 = "東京大学"
+	w3 = f.Cal(t3)
+	fmt.Printf("weight of %s is %+v.\n", t2, w2)
+
+	sim1 := similarity.Cosine(w1, w2)
+	fmt.Printf("cosine between %s and %s is %f .\n", t1, t2, sim1)
+	sim2 := similarity.Cosine(w2, w3)
+	fmt.Printf("cosine between %s and %s is %f .\n", t2, t3, sim2)
 }
 
 ```
