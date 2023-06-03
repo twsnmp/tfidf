@@ -84,12 +84,12 @@ func (f *TFIDF) AddDocs(docs ...string) {
 	for _, doc := range docs {
 		h := hash(doc)
 		if f.docHashPos(h) >= 0 {
-			return
+			continue
 		}
 
 		termFreq := f.termFreq(doc)
 		if len(termFreq) == 0 {
-			return
+			continue
 		}
 
 		f.docIndex[h] = f.n
