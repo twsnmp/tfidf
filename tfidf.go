@@ -3,7 +3,6 @@ package tfidf
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"log"
 	"math"
 
 	"github.com/twsnmp/tfidf/seg"
@@ -16,6 +15,7 @@ type TFIDF struct {
 	termFreqs []map[string]int       // term frequency for each train document
 	termDocs  map[string]int         // documents number for each term in train data
 	n         int                    // number of documents in train data
+	skip      int                    // number of skip documents
 	stopWords map[string]interface{} // words to be filtered
 	tokenizer seg.Tokenizer          // tokenizer, space is used as default
 }
@@ -27,6 +27,7 @@ func New() *TFIDF {
 		termFreqs: make([]map[string]int, 0),
 		termDocs:  make(map[string]int),
 		n:         0,
+		skip:      0,
 		tokenizer: &seg.EnTokenizer{},
 	}
 }
@@ -39,21 +40,6 @@ func NewTokenizer(tokenizer seg.Tokenizer) *TFIDF {
 		termDocs:  make(map[string]int),
 		n:         0,
 		tokenizer: tokenizer,
-	}
-}
-
-func (f *TFIDF) initStopWords() {
-	if f.stopWords == nil {
-		f.stopWords = make(map[string]interface{})
-	}
-
-	lines, err := util.ReadLines("../data/stopword")
-	if err != nil {
-		log.Printf("init stop words with error: %s", err)
-	}
-
-	for _, w := range lines {
-		f.stopWords[w] = nil
 	}
 }
 
@@ -70,11 +56,10 @@ func (f *TFIDF) AddStopWords(words ...string) {
 
 // AddStopWordsFile add stop words file to be filtered, with one word a line
 func (f *TFIDF) AddStopWordsFile(file string) (err error) {
-	lines, err := util.ReadLines(file)
+	lines, err := util.ReadLines(file, "")
 	if err != nil {
 		return
 	}
-
 	f.AddStopWords(lines...)
 	return
 }
@@ -166,6 +151,6 @@ func hash(text string) string {
 
 func tfidf(termFreq, docTerms, termDocs, N int) float64 {
 	tf := float64(termFreq) / float64(docTerms)
-	idf := math.Log(float64(1+N) / (1 + float64(termDocs)))
+	idf := math.Log(float64(1+N)/(1+float64(termDocs))) + 1
 	return tf * idf
 }

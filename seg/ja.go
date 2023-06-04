@@ -5,11 +5,17 @@ import (
 )
 
 type JaTokenizer struct {
+	t tokenizer.Tokenizer
+}
+
+func NewJaTokenizer() *JaTokenizer {
+	return &JaTokenizer{
+		t: tokenizer.New(),
+	}
 }
 
 func (s *JaTokenizer) Seg(text string) []string {
-	t := tokenizer.New()
-	tokens := t.Tokenize(text)
+	tokens := s.t.Tokenize(text)
 	tokens = tokens[1 : len(tokens)-1]
 	terms := make([]string, len(tokens))
 	for i, token := range tokens {

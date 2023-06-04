@@ -1,2 +1,4 @@
+github.com/gravwell/gravwell/v3 v3.8.20 h1:C29VvQdcQvBfHYWhyyNBzCEOWQEL3EErYdq7uxNjX0o=
+github.com/gravwell/gravwell/v3 v3.8.20/go.mod h1:AnwLm1f3Uu5SkAgVqytrrrXe5RZB1TpArvVy/R365KA=
 github.com/ikawaha/kagome v1.11.2 h1:eCWpLqv5Euqa5JcwkaobUSy6uGM8rwwMw5Su3eRepBI=
 github.com/ikawaha/kagome v1.11.2/go.mod h1:lHwhkGuuWqKWTxeQMppD0EmQAfKbc39QKx9qoWqgo+A=
