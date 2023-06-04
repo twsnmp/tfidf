@@ -73,3 +73,21 @@ func main() {
 }
 
 ```
+
+## Sample
+
+[rarelog](cmd/rarelog/main.go)
+
+```
+%rarelog <option> logfile
+%rarelog -h
+Usage of ./dist/rarelog.app:
+  -c int
+    	show top n count (default 10)
+  -f string
+    	regexp filter
+  -g	use time grinder
+  -t string
+    	tokenizer (en|log|ja) (default "en")
+  -v	show version
+```
