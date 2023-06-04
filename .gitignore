@@ -17,3 +17,5 @@ verdor
 # data
 *.dat
 *.csv
+
+cmd/rarelog/dist/
