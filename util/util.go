@@ -33,7 +33,9 @@ func ReadSplitter(file, filter string, splitter byte) (lines []string, err error
 			continue
 		}
 		line = strings.Replace(line, string(splitter), "", -1)
-		lines = append(lines, line)
+		if line != "" {
+			lines = append(lines, line)
+		}
 	}
 	return
 }
