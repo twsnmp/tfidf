@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"math"
+	"sort"
 
 	"github.com/twsnmp/tfidf/seg"
 	"github.com/twsnmp/tfidf/util"
@@ -15,9 +16,10 @@ type TFIDF struct {
 	termFreqs []map[string]int       // term frequency for each train document
 	termDocs  map[string]int         // documents number for each term in train data
 	n         int                    // number of documents in train data
-	skip      int                    // number of skip documents
+	dup       int                    // number of dup documents
 	stopWords map[string]interface{} // words to be filtered
 	tokenizer seg.Tokenizer          // tokenizer, space is used as default
+	allTerms  []string               // all terms in train data
 }
 
 // New new model with default
@@ -27,7 +29,7 @@ func New() *TFIDF {
 		termFreqs: make([]map[string]int, 0),
 		termDocs:  make(map[string]int),
 		n:         0,
-		skip:      0,
+		dup:       0,
 		tokenizer: &seg.EnTokenizer{},
 	}
 }
@@ -39,7 +41,9 @@ func NewTokenizer(tokenizer seg.Tokenizer) *TFIDF {
 		termFreqs: make([]map[string]int, 0),
 		termDocs:  make(map[string]int),
 		n:         0,
+		dup:       0,
 		tokenizer: tokenizer,
+		allTerms:  []string{},
 	}
 }
 
@@ -68,10 +72,15 @@ func (f *TFIDF) AddStopWordsFile(file string) (err error) {
 func (f *TFIDF) AddDocs(docs ...string) {
 	for _, doc := range docs {
 		h := hash(doc)
-		if f.docHashPos(h) >= 0 {
+		docPos := f.docHashPos(h)
+		if docPos >= 0 {
+			termFreq := f.termFreqs[docPos]
+			for term := range termFreq {
+				f.termDocs[term]++
+			}
+			f.dup++
 			continue
 		}
-
 		termFreq := f.termFreq(doc)
 		if len(termFreq) == 0 {
 			continue
@@ -86,6 +95,11 @@ func (f *TFIDF) AddDocs(docs ...string) {
 			f.termDocs[term]++
 		}
 	}
+	f.allTerms = []string{}
+	for t := range f.termDocs {
+		f.allTerms = append(f.allTerms, t)
+	}
+	sort.Strings(f.allTerms)
 }
 
 // Cal calculate tf-idf weight for specified document
@@ -95,8 +109,10 @@ func (f *TFIDF) Cal(doc string) (weight map[string]float64) {
 	var termFreq map[string]int
 
 	docPos := f.docPos(doc)
+	o := 0
 	if docPos < 0 {
 		termFreq = f.termFreq(doc)
+		o = 1
 	} else {
 		termFreq = f.termFreqs[docPos]
 	}
@@ -106,10 +122,59 @@ func (f *TFIDF) Cal(doc string) (weight map[string]float64) {
 		docTerms += freq
 	}
 	for term, freq := range termFreq {
-		weight[term] = tfidf(freq, docTerms, f.termDocs[term], f.n)
+		weight[term] = tfidf(freq, docTerms, f.termDocs[term], f.n, o)
 	}
 
 	return weight
+}
+
+// GetTFIDF : calculate tf-idf vector for specified documents
+func (f *TFIDF) GetTFIDF(docs ...string) [][]float64 {
+	ret := [][]float64{}
+	for _, doc := range docs {
+		var termFreq map[string]int
+		docPos := f.docPos(doc)
+		o := 0
+		if docPos < 0 {
+			termFreq = f.termFreq(doc)
+			o = 1
+		} else {
+			termFreq = f.termFreqs[docPos]
+		}
+		docTerms := 0
+		for _, freq := range termFreq {
+			docTerms += freq
+		}
+		w := make(map[string]float64)
+		for term, freq := range termFreq {
+			w[term] = tfidf(freq, docTerms, f.termDocs[term], f.n, o)
+		}
+		vector := []float64{}
+		for _, t := range f.allTerms {
+			if v, ok := w[t]; ok {
+				vector = append(vector, v)
+			} else {
+				vector = append(vector, 0.0)
+			}
+		}
+		ret = append(ret, vector)
+	}
+	return ret
+}
+
+// GetDocumentCount : get number of documents in train data
+func (f *TFIDF) GetDocumentCount() int {
+	return f.n + f.dup
+}
+
+// GetSDupCount : get number of duplicate documents in train data
+func (f *TFIDF) GetDupCount() int {
+	return f.dup
+}
+
+// GetAllTerms : get sorted all terms in train data
+func (f *TFIDF) GetAllTerms() []string {
+	return f.allTerms
 }
 
 func (f *TFIDF) termFreq(doc string) (m map[string]int) {
@@ -149,8 +214,8 @@ func hash(text string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func tfidf(termFreq, docTerms, termDocs, N int) float64 {
+func tfidf(termFreq, docTerms, termDocs, N, o int) float64 {
 	tf := float64(termFreq) / float64(docTerms)
-	idf := math.Log(float64(1+N)/(1+float64(termDocs))) + 1
+	idf := math.Log(float64(o+N)/float64(o+termDocs)) + 1
 	return tf * idf
 }
