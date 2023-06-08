@@ -45,7 +45,7 @@ func TestGetTFIDF(t *testing.T) {
 	if len(at) != 7 || at[6] != "虫" {
 		t.Fatalf("failed GetAllTerms=%v", at)
 	}
-	v := f.GetTFIDF(docs...)
+	v := f.GetTFIDF(100, docs...)
 	if len(v) != 3 || len(v[0]) != 7 || v[0][0] != 0.3513662770270411 {
 		t.Fatalf("failed GetTFIDF=%v", v)
 	}

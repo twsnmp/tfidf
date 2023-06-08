@@ -129,7 +129,7 @@ func (f *TFIDF) Cal(doc string) (weight map[string]float64) {
 }
 
 // GetTFIDF : calculate tf-idf vector for specified documents
-func (f *TFIDF) GetTFIDF(docs ...string) [][]float64 {
+func (f *TFIDF) GetTFIDF(limit int, docs ...string) [][]float64 {
 	ret := [][]float64{}
 	for _, doc := range docs {
 		var termFreq map[string]int
@@ -157,7 +157,15 @@ func (f *TFIDF) GetTFIDF(docs ...string) [][]float64 {
 				vector = append(vector, 0.0)
 			}
 		}
-		ret = append(ret, vector)
+		if len(vector) < limit {
+			ret = append(ret, vector)
+		} else {
+			rv := make([]float64, limit)
+			for i, e := range vector {
+				rv[i%limit] += e
+			}
+			ret = append(ret, rv)
+		}
 	}
 	return ret
 }

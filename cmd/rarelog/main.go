@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"runtime"
 	"sort"
 	"time"
 
@@ -20,9 +21,11 @@ var commit = ""
 
 var filter = ""
 var count = 10
+var limit = 100
 var tokenizer = "en"
 var ad = ""
 var userTG = false
+var debug = false
 var showVersion = false
 
 type logEnt struct {
@@ -35,8 +38,10 @@ func init() {
 	flag.StringVar(&ad, "a", "", "anomaly detection(sum|if|lof)")
 	flag.StringVar(&tokenizer, "t", "en", "tokenizer (en|log|ja)")
 	flag.IntVar(&count, "c", 10, "show top n count")
+	flag.IntVar(&limit, "l", 100, "vector limit")
 	flag.BoolVar(&userTG, "g", false, "use time grinder")
 	flag.BoolVar(&showVersion, "v", false, "show version")
+	flag.BoolVar(&debug, "d", false, "show version")
 	flag.Parse()
 }
 
@@ -48,9 +53,11 @@ func main() {
 	if flag.NArg() < 1 {
 		log.Fatalln("no input file")
 	}
+	outDebugLog("start args=%d alloc=%d", flag.NArg(), getMemStats())
 	lines := []string{}
 	for i := 0; i < flag.NArg(); i++ {
-		ls, err := util.ReadLines(flag.Arg(0), filter)
+		outDebugLog("read args=%s", flag.Arg(i))
+		ls, err := util.ReadLines(flag.Arg(i), filter)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -59,6 +66,8 @@ func main() {
 	if len(lines) < 1 {
 		log.Fatalln("no lines")
 	}
+	outDebugLog("lines=%d alloc=%d", len(lines), getMemStats())
+
 	logs := []logEnt{}
 	var f *tfidf.TFIDF
 	switch tokenizer {
@@ -72,12 +81,14 @@ func main() {
 	f.AddDocs(lines...)
 	switch ad {
 	case "lof":
-		vectors := f.GetTFIDF(lines...)
+		vectors := f.GetTFIDF(limit, lines...)
+		outDebugLog("lof all words=%d alloc=%d", len(vectors[0]), getMemStats())
 		samples := lof.GetSamplesFromFloat64s(vectors)
 		lofGetter := lof.NewLOF(5)
 		if err := lofGetter.Train(samples); err != nil {
 			log.Fatalf("LOF err=%v", err)
 		}
+		outDebugLog("lof end train alloc=%d", getMemStats())
 		for i, s := range samples {
 			s := lofGetter.GetLOF(s, "fast")
 			logs = append(logs, logEnt{
@@ -85,8 +96,10 @@ func main() {
 				Score: s,
 			})
 		}
+		outDebugLog("lof end alloc=%d", getMemStats())
 	case "if":
-		vectors := f.GetTFIDF(lines...)
+		vectors := f.GetTFIDF(limit, lines...)
+		outDebugLog("if all words=%d alloc=%d", len(vectors[0]), getMemStats())
 		rand.Seed(time.Now().UnixNano())
 		ss := 256
 		if ss > len(vectors) {
@@ -96,6 +109,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("NewIForest err=%v", err)
 		}
+		outDebugLog("if end train alloc=%d", getMemStats())
 		for i, v := range vectors {
 			s := ifo.CalculateAnomalyScore(v)
 			logs = append(logs, logEnt{
@@ -103,6 +117,7 @@ func main() {
 				Score: s,
 			})
 		}
+		outDebugLog("if end alloc=%d", getMemStats())
 	default:
 		for i := 0; i < len(lines); i++ {
 			w := f.Cal(lines[i])
@@ -111,6 +126,7 @@ func main() {
 				Score: sumTFIDF(w),
 			})
 		}
+		outDebugLog("tfidf end alloc=%d", getMemStats())
 	}
 	sort.Slice(logs, func(i, j int) bool { return logs[i].Score > logs[j].Score })
 	fmt.Printf("%-5s\t%s\n", "Score", "Log")
@@ -125,4 +141,16 @@ func sumTFIDF(m map[string]float64) float64 {
 		r += v
 	}
 	return r
+}
+
+func outDebugLog(f string, a ...any) {
+	if debug {
+		log.Printf(f, a...)
+	}
+}
+
+func getMemStats() uint64 {
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+	return mem.Alloc
 }
