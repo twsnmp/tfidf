@@ -70,7 +70,6 @@ func main() {
 	fmt.Printf("cosine between %s and %s is %f .\n", t1, t2, sim)
 }
 
-}
 
 ```
 
@@ -81,13 +80,18 @@ func main() {
 ```
 %rarelog <option> logfile
 %rarelog -h
-Usage of ./dist/rarelog.app:
+Usage of rarelog:
+  -a string
+    	anomaly detection(sum|if|lof)
   -c int
     	show top n count (default 10)
+  -d	show version
   -f string
     	regexp filter
   -g	use time grinder
+  -l int
+    	vector limit (default 100)
   -t string
     	tokenizer (en|log|ja) (default "en")
   -v	show version
-```
+ ```

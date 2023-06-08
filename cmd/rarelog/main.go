@@ -16,7 +16,7 @@ import (
 	"github.com/twsnmp/tfidf/util"
 )
 
-var version = "1.0.0"
+var version = "1.1.0"
 var commit = ""
 
 var filter = ""
