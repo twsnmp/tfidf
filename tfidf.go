@@ -157,7 +157,7 @@ func (f *TFIDF) GetTFIDF(limit int, docs ...string) [][]float64 {
 				vector = append(vector, 0.0)
 			}
 		}
-		if len(vector) < limit || limit < 0 {
+		if len(vector) < limit || limit <= 0 {
 			ret = append(ret, vector)
 		} else {
 			rv := make([]float64, limit)
